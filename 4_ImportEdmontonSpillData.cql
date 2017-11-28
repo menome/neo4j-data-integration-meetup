@@ -145,7 +145,7 @@ MERGE (s)-[:IsInField]->(f)
 WITH record, s
 where record.licensee_id <> ''
 CALL apoc.create.uuids(1) YIELD uuid as Uuid
-MERGE (l:Licensee {Name: record.licensee_id})
+MERGE (l:Licensee {Code: record.licensee_id})
 ON CREATE
 set
 l.Uuid = Uuid,
