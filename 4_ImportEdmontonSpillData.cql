@@ -79,7 +79,9 @@ s.Source = record.source,
 s.StrikeArea = record.strike_area,
 s.Latitude = toFloat(locations.coordinates[1]),
 s.Longitude = toFloat(locations.coordinates[0]),
-s.IncidentType = record.incident_type
+s.IncidentType = record.incident_type,
+s.LicenseeId = record.licensee_id,
+s.LicenseeName = record.licensee_name
 ON MATCH 
 set 
 s.Uuid = Uuid,
@@ -103,7 +105,9 @@ s.Source = record.source,
 s.StrikeArea = record.strike_area,
 s.Latitude = toFloat(locations.coordinates[1]),
 s.Longitude = toFloat(locations.coordinates[0]),
-s.IncidentType = record.incident_type
+s.IncidentType = record.incident_type,
+s.LicenseeId = record.licensee_id,
+s.LicenseeName = record.licensee_name
 
 // Generate Substance Released Node:
 WITH s, record
@@ -149,7 +153,7 @@ MERGE (l:Licensee {Code: record.licensee_id})
 ON CREATE
 set
 l.Uuid = Uuid,
-l.Code = record.licensee_code,
+//l.Code = record.licensee_code,
 l.LicenseNumber = record.licence_number,
 l.LicenseeId = record.licensee_id,
 l.LicenseType = record.licence_type,
@@ -157,14 +161,15 @@ l.FullName = record.licensee_name
 ON MATCH 
 set
 l.Uuid = Uuid,
-l.Code = record.licensee_code,
+//l.Code = record.licensee_code,
 l.LicenseNumber = record.licence_number,
 l.LicenseeId = record.licensee_id,
 l.LicenseType = record.licence_type,
 l.FullName = record.licensee_name
 
-
-MERGE (l)-[:Spilled]->(s);
+WITH l,s
+MATCH (li {Code:l.Code})
+MERGE (li)-[:Spilled]->(s);
 
 
 // GRAPH REFACORING EXAMPLES: 

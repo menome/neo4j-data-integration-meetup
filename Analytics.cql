@@ -9,3 +9,10 @@ MATCH (s:Spill)-[]-(l:Licensee)-[]-(lc:License)
 WITH lc , l,count(s) as spillCount limit 1000
 MATCH (lc)-[]-(w:Well) 
 return l.Name, l.FullName,count(distinct w) as wellCount,  spillCount order by wellCount descending
+
+// number of wells for licensee
+match (s:Spill)-[]-(li:Licensee)-[]-(l:License)-[]-(w:Well) 
+return li.Name, count(distinct w) order by count(distinct w) desc
+
+// have to find out if lat/long or LSD are coincident between spill and well
+
