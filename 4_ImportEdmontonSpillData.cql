@@ -167,8 +167,9 @@ l.LicenseeId = record.licensee_id,
 l.LicenseType = record.licence_type,
 l.FullName = record.licensee_name
 
-WITH l,s
-MATCH (li {Code:l.Code})
+WITH record
+MATCH (li {Code:record.licensee_id})
+MATCH (s {Code:record.incident_number})
 MERGE (li)-[:Spilled]->(s);
 
 
