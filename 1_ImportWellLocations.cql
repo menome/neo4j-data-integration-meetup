@@ -64,6 +64,8 @@ ON CREATE set
     c.WellStat= line.WellStat,
     c.StatDate= line.StatDate,
     c.FDDate= line.FDDate,
+    c.Licensee=line.Licensee,
+    c.License=line.License,
     c.Latitude= toFloat(line.Y),
     c.Longitude= toFloat(line.X);
 
@@ -129,10 +131,12 @@ WITH line
 where line.Licensee <> ''
 CALL apoc.create.uuids(1) YIELD uuid as Uuid
 
-MERGE (l:Licensee {Name: left(line.Licensee,length(line.Licensee)-1)})
+MERGE (l:Licensee {Code: left(line.Licensee,length(line.Licensee)-1)})
 ON CREATE set
-l.Uuid= Uuid
+l.Uuid= Uuid,
+l.Name =line.Licensee
 ON MATCH set
+l.Name = line.Licensee,
 l.Uuid= Uuid; 
 
 // -----------------------------------------------
@@ -142,7 +146,15 @@ USING PERIODIC COMMIT 1000
 LOAD CSV WITH HEADERS FROM 'file:///WellListLocationsWGS84.csv' AS line //with line limit 100
 MATCH(w:License {Name:line.License})
 MATCH(l:Licensee {Name: left(line.Licensee,length(line.Licensee)-1)})
-MERGE (w)-[:LicensedTo]->(l);
+MERGE (w)-[:WellHasLicense]->(l);
+
+
+// Well WellLicensedTo Licensee
+USING PERIODIC COMMIT 1000
+LOAD CSV WITH HEADERS FROM 'file:///WellListLocationsWGS84.csv' AS line //with line limit 100
+MATCH(w:Well {Uwi:line.UWI})
+MATCH(l:Licensee {Name: left(line.Licensee,length(line.Licensee)-1)})
+MERGE (w)-[:WellLicensedTo]->(l);
 
 // License Status 
 USING PERIODIC COMMIT 1000

@@ -36,3 +36,11 @@ MERGE (s)-[:IsInFieldCenter]->(fc);
 // now delete the spill-Field relationship
 MATCH (s:Spill)-[d:IsInField]->(f:Field)
 DELETE d
+
+
+// add phoneme string to spill node
+match (s:Spill) with  s limit 1
+CALL apoc.text.phonetic(s.LicenseeName) YIELD value as phoneme WITH phoneme, s set s.PhonemeKey=phoneme return s
+
+match (li:Licensee) with  li limit 1
+CALL apoc.text.phonetic(li.FullName) YIELD value as phoneme WITH phoneme, s set s.PhonemeKey=phoneme return li

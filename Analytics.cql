@@ -1,3 +1,30 @@
+// Not all spils have a licensee ID, so see if we can match using string methods
+
+// find out how many spills don't have a relationship to licensee based on ID
+match (s:Spill) where not (s)-[]-() 
+WITH s
+MATCH (l:Licensee) where l.NameKey = s.NameKey return count(distinct s),count(distinct l)
+
+// set property on existing relationships to 1 to show they are explicit
+MATCH (l:Licensee)-[r:Licensee]-(s:Spill) set r.Weight=1
+
+// generate cleaned string key
+MATCH (n:Licensee) with n set n.NameKey=apoc.text.clean(n.FullName)
+
+// generate phoneme string key
+MATCH (n:Spill) with n call apoc.text.phonetic(n.LicenseeName) yield value as phonetic WITH phonetic,n set n.NamePhonemeKey=phonetic
+
+// find out which spill nodes don't have a relationship
+match (s:Spill) where not (s)-[]-() return count(s)
+
+// Match using stringKey
+match (s:Spill) where not (s)-[]-() 
+WITH s
+MATCH (l:Licensee) where l.NameKey = s.NameKey return count(distinct s),count(distinct l)
+
+// Try match on string key
+
+
 // count wells and spills for licensees
 MATCH (l:Licensee)<-[:LicensedTo]-(li:License)<-[:HasLicense]-(w:Well) 
 WITH l,w
