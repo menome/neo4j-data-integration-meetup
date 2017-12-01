@@ -38,9 +38,19 @@ MATCH (s:Spill)-[d:IsInField]->(f:Field)
 DELETE d
 
 
+
+// --- fuzzy name matching 
 // add phoneme string to spill node
 match (s:Spill) with  s limit 1
 CALL apoc.text.phonetic(s.LicenseeName) YIELD value as phoneme WITH phoneme, s set s.PhonemeKey=phoneme return s
 
 match (li:Licensee) with  li limit 1
 CALL apoc.text.phonetic(li.FullName) YIELD value as phoneme WITH phoneme, s set s.PhonemeKey=phoneme return li
+
+
+// match up Facility and SPill based on LSD
+MATCH (f:Facility)
+MATCH (s:Spill) 
+
+Where f.LSD = s.LSD return f,s limit 100
+

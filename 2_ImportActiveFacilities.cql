@@ -47,6 +47,8 @@ ON CREATE set
 f.Uuid= fuuid,
 f.Name= line.FacilityName,
 f.LSD= line.LSD,
+f.LicenseeId= line.LicenseeId,
+f.OperatorCode: line.OperatorCode,
 f.Status= line.OperationalStatus;
 
 // Facility Has EdctCode EdctCodes
@@ -104,8 +106,8 @@ LOAD CSV WITH HEADERS FROM 'file:///ActiveFacility.csv' AS line
 WITH line 
 where line.SubTypeCode <> ''
 
-// Facility HasOperator Operator
+// Facility SUBTYPE
 WITH line 
 MATCH(s:SubType {Code:line.SubTypeCode})
 MATCH(f:Facility {Code:line.FacilityID})
-MERGE (f)-[:IsSubType]->(s);
+MERGE (f)-[:HAS_SUBTYPE]->(s);

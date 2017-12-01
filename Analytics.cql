@@ -43,3 +43,16 @@ return li.Name, count(distinct w) order by count(distinct w) desc
 
 // have to find out if lat/long or LSD are coincident between spill and well
 
+
+
+// generate heatmap 
+MATCH (sr:SubstanceReleased)<-[SubstanceReleased]-(a:Spill)-[:SPILL_NEAR_WELL]->(o:Well)-[:LICENSEE_OF]->(e:Licensee)
+              WHERE exists(a.Latitude) and exists(a.Longitude) 
+              WITH a, COLLECT(DISTINCT o)[0..5] AS wells, COLLECT(DISTINCT e)[0..5] AS entities, COLLECT(DISTINCT sr.Name)[0..5] AS substance, 1.0*COUNT(*) AS strength
+              RETURN a.EnvironmentAffected AS spill, a.Latitude AS latitude, a.Longitude AS longitude, [x IN wells | x.Name] as wells, [x IN entities | x.FullName] as licensees, substance, strength
+
+// generate heatmap with distance as strenght 
+MATCH (sr:SubstanceReleased)<-[SubstanceReleased]-(a:Spill)-[:SPILL_NEAR_WELL]->(o:Well)-[:LICENSEE_OF]->(e:Licensee)
+              WHERE exists(a.Latitude) and exists(a.Longitude) 
+              WITH a, COLLECT(DISTINCT o)[0..5] AS wells, COLLECT(DISTINCT e)[0..5] AS entities, COLLECT(DISTINCT sr.Name)[0..5] AS substance, sum(sn.Distance) AS strengthAS strength
+              RETURN a.EnvironmentAffected AS spill, a.Latitude AS latitude, a.Longitude AS longitude, [x IN wells | x.Name] as wells, [x IN entities | x.FullName] as licensees, substance, strength
