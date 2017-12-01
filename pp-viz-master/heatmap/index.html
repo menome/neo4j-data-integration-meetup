@@ -1,0 +1,151 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="js/leaflet.css" />
+    <!--[if lte IE 8]>
+      <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.ie.css" />
+    <![endif]-->
+
+     <script src="js/leaflet.js"></script>
+     <!--<script src="http://cdn.leafletjs.com/leaflet-0.4.4/leaflet-src.js"></script> -->
+     
+     
+     <script src="js/neo4j-web.min.js"></script>
+     
+ <!-- <script src="js/heatmap/src/heatmap.js"></script>
+     <script src="js/heatmap/src/heatmap-leaflet.js"></script>
+     <script src="js/heatmap/src/QuadTree.js"></script> -->
+
+     <script src="js/heatcanvas.js"></script>
+     <script src="js/heatcanvas-leaflet.js"></script>
+     <script src="js/markercluster/leaflet.markercluster-src.js"></script>
+     <link rel="stylesheet" href="js/markercluster/MarkerCluster.css" />
+     <link rel="stylesheet" href="js/markercluster/MarkerCluster.Default.css" />
+
+  <style>
+    #map {height: 100%;}
+    .spinner {
+      border: 16px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 16px solid #3498db;
+      width: 120px;
+      height: 120px;
+      -webkit-animation: spin 2s linear infinite;
+      animation: spin 2s linear infinite;
+    }
+
+    @-webkit-keyframes spin {
+      0% { -webkit-transform: rotate(0deg); }
+      100% { -webkit-transform: rotate(360deg); }
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+
+  </head>
+
+  <body>
+    <div class="spinner" id="sp"></div>
+    <div id="map"></div>
+
+
+    <script>
+    
+    
+    var map;
+    
+    function onLocationFound(e) {
+      
+      //map.zoomTo(e.latlng);
+
+    }
+
+    function onLocationError(e) {
+      //alert(e.message);
+    }
+    
+    window.onload = function() {
+      init();
+      //console.log("window hath loaded");
+    }   
+    
+    function init() {
+      console.log("init");
+      
+      var driver = neo4j.v1.driver("bolt://www.menome.org:7687", neo4j.v1.auth.basic("neo4j", "un1Ball!"));
+      
+      
+      //var baseLayer = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', { attribution: '<a target=_blank href="http://osm.org/copyright">OpenStreetMap</a> | Data From <a target=_blank href="https://offshoreleaks.icij.org/pages/database">Edmonton Open Data Portal</a>', minZoom: 2, maxZoom: 18});
+      var baseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '<a target=_blank href="http://osm.org/copyright">OpenStreetMap</a> | Data From <a target=_blank href="https://offshoreleaks.icij.org/pages/database">Edmonton Open Data Portal</a>', minZoom: 2, maxZoom: 18});
+      //var baseLayer = L.tileLayer('https://{s}.aerial.maps.cit.api.here.com/maptile/2.1/maptile/maptile/hybrid.day/{z}/{x}/{y}/256/png8?app_id={app_id}&app_code={app_code}&lg={language}', { attribution: '<a target=_blank href="http://osm.org/copyright">OpenStreetMap</a> | Data From <a target=_blank href="https://offshoreleaks.icij.org/pages/database">Edmonton Open Data Portal</a>', minZoom: 2, maxZoom: 18});
+     
+      var markerLayers = new L.MarkerClusterGroup();
+      var heatmap = new L.TileLayer.HeatCanvas({}, {'step':0.3, 'degree': HeatCanvas.LINEAR, 'opacity': 0.7});
+
+      //var markerLayers = new L.LayerGroup();
+      //var markerLayers = new L.MarkerClusterGroup();
+      
+      
+      var session = driver.session();
+      session
+        .run(`MATCH (sr:SubstanceReleased)<-[SubstanceReleased]-(a:Spill)-[:SPILL_NEAR_WELL]->(o:Well)-[:LICENSEE_OF]->(e:Licensee)
+        WHERE exists(a.Latitude) and exists(a.Longitude) 
+        WITH a, COLLECT(DISTINCT o)[0..5] AS wells, COLLECT(DISTINCT e)[0..5] AS entities, COLLECT(DISTINCT sr.Name)[0..5] AS substance, 1.0*COUNT(*) AS strength
+        RETURN a.EnvironmentAffected AS spill, a.Latitude AS latitude, a.Longitude AS longitude, [x IN wells | x.Name] as wells, [x IN entities | x.FullName] as licensees, substance, strength`)
+
+              
+
+        .subscribe({
+          onNext: function (record) {
+            //console.log(record);
+            var marker = new L.Marker(new L.LatLng(record.get('latitude'), record.get('longitude')));
+            marker.bindPopup('<b>Spill</b> ' + record.get('spill') + '<br>' + '<b>Wells: </b>' + record.get('wells').toString() + '<br><b>Licensees:</b> ' + record.get('licensees').toString() + '<br><b>Substance Released: </b> ' + record.get('substance').toString());
+            markerLayers.addLayer(marker);
+            heatmap.pushData(record.get('latitude'), record.get('longitude'), record.get('strength')*0.01);
+          },
+          onCompleted: function () {
+            
+            var spinner = document.getElementById("sp");
+            
+            
+            
+            
+            spinner.setAttribute("style", "display: none;");
+            
+            var overlayMaps = {'Markers': markerLayers, 'Heatmap': heatmap};
+
+            var controls = L.control.layers(null, overlayMaps, {collapsed: false, autoZIndex: true});
+
+            map = new L.Map('map', {center: new L.LatLng(51.505, -0.09), zoom: 3, layers: [baseLayer]});
+            map.on('locationfound', onLocationFound);
+            map.on('locationerror', onLocationError);
+            map.locate({setView: true, maxZoom: 7});
+            
+            map.addLayer(markerLayers);
+            map.addLayer(heatmap);
+
+            controls.addTo(map);
+            session.close();
+          },
+          onError: function (error) {
+            console.log(error);
+          }
+        });
+      }
+    </script>
+  </body>
+  
+  
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-43032717-5"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-43032717-5');
+  </script>
+
+</html>

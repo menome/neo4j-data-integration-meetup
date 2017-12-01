@@ -68,4 +68,26 @@ ON CREATE set
 f.Uuid= fuuid,
 f.Name= line.FacilityName,
 f.LSD= line.LSD,
-f.Status= line.OperationalStatus;
+f.Status= line.OperationalStatus,
+f.OperatorCode=line.OperatorCode,
+f.OperatorName = line.OperatorName,
+f.LicenseeId=line.LicenseeCode;
+
+
+// OPERATOR_OF
+USING PERIODIC COMMIT 1000
+LOAD CSV WITH HEADERS FROM 'file:///ActiveFacility.csv' AS line 
+WITH line 
+where line.OperatorCode <> ''
+
+// Facility OPERATOR_OF Licenseee
+WITH line 
+MATCH(li:Licensee {Code:line.OperatorCode})
+MATCH(f:Facility {Code:line.FacilityID})
+MERGE (f)-[:OPERATOR_OF]->(o);
+
+// Facility LICENSEE_OF Licenseee
+WITH line 
+MATCH(li:Licensee {Code:line.OperatorCode})
+MATCH(f:Facility {Code:line.FacilityID})
+MERGE (f)-[:OPERATOR_OF]->(o);
