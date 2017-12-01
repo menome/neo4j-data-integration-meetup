@@ -64,10 +64,24 @@ ON CREATE set
     c.WellStat= line.WellStat,
     c.StatDate= line.StatDate,
     c.FDDate= line.FDDate,
-    c.Licensee=line.Licensee,
+    c.LicenseeId=left(line.Licensee,length(line.Licensee)-1),
     c.License=line.License,
     c.Latitude= toFloat(line.Y),
-    c.Longitude= toFloat(line.X);
+    c.Longitude= toFloat(line.X)
+ON MATCH set    
+    c.Uuid = wuuid,
+    c.LSD = (substring(line.UWI,3,14)),
+    c.Keylist = line.Keylist,
+    c.Name= line.Name,
+    c.TotalDepth= line.TotalDep,
+    c.WellStat= line.WellStat,
+    c.StatDate= line.StatDate,
+    c.FDDate= line.FDDate,
+    c.LicenseeId=left(line.Licensee,length(line.Licensee)-1),
+    c.License=line.License,
+    c.Latitude= toFloat(line.Y),
+    c.Longitude= toFloat(line.X)
+    ;
 
 // Field Name
 USING PERIODIC COMMIT 1000
@@ -154,7 +168,7 @@ USING PERIODIC COMMIT 1000
 LOAD CSV WITH HEADERS FROM 'file:///WellListLocationsWGS84.csv' AS line //with line limit 100
 MATCH(w:Well {Uwi:line.UWI})
 MATCH(l:Licensee {Name: left(line.Licensee,length(line.Licensee)-1)})
-MERGE (w)-[:WellLicensedTo]->(l);
+MERGE (w)-[:Licensee]->(l);
 
 // License Status 
 USING PERIODIC COMMIT 1000
@@ -172,7 +186,7 @@ l.Uuid= Uuid;
 // License HasStatus LicenseStatus
 USING PERIODIC COMMIT 1000
 LOAD CSV WITH HEADERS FROM 'file:///WellListLocationsWGS84.csv' AS line //with line limit 100
-MATCH(w:License {Name:line.License})
+MATCH(w:License {Code:line.License})
 MATCH(l:LicenseStatus {Name: line.LicStatus})
 MERGE (w)-[:HasStatus]->(l);
 

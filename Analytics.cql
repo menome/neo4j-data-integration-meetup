@@ -25,21 +25,38 @@ MATCH (l:Licensee) where l.NameKey = s.NameKey return count(distinct s),count(di
 // Try match on string key
 
 
+
+// ------------ 
+// ANALYTICS:
+//Basic statistics over the data tell us that we have these entities:
+
+MATCH (n)
+RETURN labels(n), count(*)
+ORDER BY count(*) DESC
+
+
+MATCH (n)
+WITH labels(n) AS type, size( (n)--() ) AS degree
+RETURN type,
+       max(degree) AS max, round(avg(degree)) AS avg, round(stdev(degree)) AS stdev
+
 // count wells and spills for licensees
-MATCH (l:Licensee)<-[:LicensedTo]-(li:License)<-[:HasLicense]-(w:Well) 
-WITH l,w
-OPTIONAL MATCH (l)-[:Spilled]->(s:Spill) 
-return l.Name, count(distinct w), count(distinct s)  order by count(distinct w) descending
+
 
 // licensees with wells and spills
-MATCH (s:Spill)-[]-(l:Licensee)-[]-(lc:License)
+MATCH (s:Spill)-[]-(l:LICENSEE_OF)-[]-(lc:License)
 WITH lc , l,count(s) as spillCount limit 1000
 MATCH (lc)-[]-(w:Well) 
 return l.Name, l.FullName,count(distinct w) as wellCount,  spillCount order by wellCount descending
 
 // number of wells for licensee
-match (s:Spill)-[]-(li:Licensee)-[]-(l:License)-[]-(w:Well) 
+match (s:Spill)-[]-(li:LICENSEE_OF)-[]-(l:License)-[]-(w:Well) 
 return li.Name, count(distinct w) order by count(distinct w) desc
 
+// ------------ 
+// SPATIAL ANALYTICS:
 // have to find out if lat/long or LSD are coincident between spill and well
-
+MATCH  p=(e:Well)-[:LICENSEE_OF]-(o:Licensee)-[:LICENSEE_OF]-(a:Spill)
+WHERE exists(a.Latitude) AND exists(a.Longitude)
+AND DISTANCE(POINT({latitude: toFloat(a.Latitude), longitude:toFloat(a.Longitude)}), POINT({latitude: toFloat(e.Latitude), longitude:toFloat(e.Longitude)})) < 2000
+RETURN p limit 100
