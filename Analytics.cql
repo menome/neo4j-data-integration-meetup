@@ -21,7 +21,7 @@ WITH f
 MATCH (l:Licensee) where l.NameKey = apoc.text.clean(f.OperatorName) 
 MERGE (f)-[:LICENSEE_OF{Weight:2}]->(l)
 
-
+ 
 
 // illustrate match based on phoneme
 match (f:Facility) where not (f)-[]-() 
@@ -142,3 +142,4 @@ RETURN li.FullName, collect(distinct w.Name), productVolume order by productVolu
 MATCH (sr:SubstanceReleased {Name:'Salt/Produced Water'})<-[SubstanceReleased]-(s:Spill)-[sn:SPILL_NEAR_WELL]->(w:Well)-[:LICENSEE_OF]->(li:Licensee) WHERE exists(s.CleanupTimeInDays)
 WITH s,w,li, sum(s.VolumeReleased) AS productVolume, toInt(split(s.LSD,'-')[2]) as township 
 RETURN li.FullName, collect(distinct w.Name), s.CleanupTimeInDays, township, productVolume order by  s.CleanupTimeInDays, township  limit 1000
+
