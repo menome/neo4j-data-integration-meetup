@@ -48,16 +48,9 @@ WITH f
 MATCH (l:Licensee) where l.NameKey = f.NameKey return count(distinct s),count(distinct l)
 
 
-
-
-// Try match on string key
-
-
-
 // ------------ 
 // ANALYTICS:
 //Basic statistics over the data tell us that we have these entities:
-
 MATCH (n)
 RETURN labels(n), count(*)
 ORDER BY count(*) DESC
@@ -123,7 +116,6 @@ MATCH       (sr:SubstanceReleased {Name:'Salt/Produced Water'})<-[SubstanceRelea
 
 
 
-
 // time required to clean up spill
 // calculate number of days between incident date and time cleaned up
 Match (s:Spill)
@@ -142,4 +134,11 @@ RETURN li.FullName, collect(distinct w.Name), productVolume order by productVolu
 MATCH (sr:SubstanceReleased {Name:'Salt/Produced Water'})<-[SubstanceReleased]-(s:Spill)-[sn:SPILL_NEAR_WELL]->(w:Well)-[:LICENSEE_OF]->(li:Licensee) WHERE exists(s.CleanupTimeInDays)
 WITH s,w,li, sum(s.VolumeReleased) AS productVolume, toInt(split(s.LSD,'-')[2]) as township 
 RETURN li.FullName, collect(distinct w.Name), s.CleanupTimeInDays, township, productVolume order by  s.CleanupTimeInDays, township  limit 1000
+
+
+// game of licensees
+// find out what things husky and CNRL have in common
+MATCH (one:Licensee {NameKey: "huskyoiloperationslimited"}), (two:Licensee {NameKey: "canadiannaturalresourceslimited"})
+MATCH p=allShortestPaths((one)-[*]-(two)) 
+RETURN p
 
