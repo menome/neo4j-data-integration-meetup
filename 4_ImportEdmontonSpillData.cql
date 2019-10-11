@@ -35,8 +35,9 @@ CREATE INDEX ON :FieldCenter(Uuid);
 // There are ~61,000 spill incident records in the overall data set. 
 // Through texting, its best to run in batches of ~10,000 (i.e. 10000 as pagesTotal, set range in intervals of 10,000)
 // Might be possbile to re-write this using APOC periodic iterate. 
-WITH 'yourkeyhere' as token,  1000 as pagesTotal
-WITH token, RANGE(1,pagesTotal,1000) as fromNumber, "https://data.edmonton.ca/resource/xir8-nx6p.json?$limit=1000&$offset=number&$order=:id" as baseUrl
+CALL apoc.periodic.commit("
+WITH 'yUEgWneqrRgNzGUIRQb7yW90M' as token,  1000 as pagesTotal
+WITH token, RANGE(1,pagesTotal,1000) as fromNumber, 'https://data.edmonton.ca/resource/xir8-nx6p.json?$limit=1000&$offset=number&$order=:id' as baseUrl
 
 // loop through results by range step (1000 records is max)
 UNWIND fromNumber as from
@@ -172,6 +173,7 @@ MATCH (li {Code:record.licensee_id})
 MATCH (s {Code:record.incident_number})
 MERGE (li)-[:Spilled]->(s);
 
+",{limit:1000})
 
 // GRAPH REFACORING EXAMPLES: 
 
